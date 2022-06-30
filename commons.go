@@ -2,7 +2,7 @@ package common
 
 // GetCommonData a method
 func GetCommonData() string {
-	return "Common Data gwrgwrr"
+	return "Common test gwrgwrr"
 }
 
 func GetData() string {
