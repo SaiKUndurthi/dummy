@@ -1,0 +1,87 @@
+---
+#########################
+#########################
+## Version GitHub Tags ##
+#########################
+#########################
+name: Frogbot Scan
+
+# Documentation: https://github.com/jfrog/frogbot/blob/master/README.md#Frogbot
+# reference: https://github.com/jfrog/frogbot/blob/master/templates/github-actions/scan-pull-request/frogbot-scan-pr-gradle.yml
+
+on:
+  pull_request_target:
+    types: [opened,synchronize]
+permissions:
+  pull-requests: write
+
+# reference: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#example-only-cancel-in-progress-jobs-or-runs-for-the-current-workflow
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+###############
+# Set the job #
+###############
+jobs:
+  scan-pull-request:
+    runs-on: ubuntu-latest
+    # A pull request needs to be approved, before Frogbot scans it. Any GitHub user who is associated with the
+    # "frogbot" GitHub environment can approve the pull request to be scanned.
+    environment: frogbot
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+
+      # Install prerequisites
+      - name: Set up Java
+        uses: actions/setup-java@v3.4.0
+        with:
+          java-version: 11
+          distribution: temurin
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+
+      - uses: jfrog/frogbot@v2.1.2
+        env:
+          # [Mandatory]
+          # JFrog platform URL
+          JF_URL: ${{ secrets.JF_XRAY_URL }}
+
+          # [Mandatory if JF_ACCESS_TOKEN is not provided]
+          # JFrog username with 'read' permissions for Xray. Must be provided with JF_PASSWORD
+          #JF_USER: ${{ secrets.JF_USER }}
+
+          # [Mandatory if JF_ACCESS_TOKEN is not provided]
+          # JFrog password. Must be provided with JF_USER
+          #JF_PASSWORD: ${{ secrets.JF_PASSWORD }}
+
+          # [Mandatory]
+          # The GitHub token automatically generated for the job
+          JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+          # Uncomment the below options if you'd like to use them.
+
+          # [Optional, default: https://api.github.com]
+          # API endpoint to GitHub
+#          JF_GIT_API_ENDPOINT: https://github.ecodesamsung.com/
+#          JF_GIT_API_ENDPOINT: https://github.ecodesamsung.com/api/v3
+
+          # [Mandatory if JF_USER and JF_PASSWORD are not provided]
+          # JFrog access token with 'read' permissions on Xray service
+          JF_ACCESS_TOKEN: ${{ secrets.XRAY_TOKEN }}
+
+          # [Optional, default: "."]
+          # Relative path to the project in the git repository
+#           JF_WORKING_DIR: path/to/build.gradle/dir
+
+          # [Optional]
+          # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
+          # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
+
+          # [Optional]
+          # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
+          # JF_PROJECT: <project-key>
